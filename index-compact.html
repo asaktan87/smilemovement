@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Smile Movement — Compact Countdown</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    /* ---- Straumann palette ---- */
+    :root{
+      --brand-blue:#195AFA;
+      --brand-gray:#36393A;
+      --brand-sand:#B98C3C;
+
+      --accent:var(--brand-blue);
+      --text:#fff;
+      --muted:rgba(255,255,255,.9);
+      --glass:rgba(54,57,58,.50);
+      --glass-brd:rgba(255,255,255,.35);
+      --bg-fallback:#0c1222;
+    }
+
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+      color:var(--text);
+      background:var(--bg-fallback);
+      display:grid; place-items:center;
+      padding:14px;
+    }
+
+    /* Background */
+    .bg{position:fixed; inset:0; z-index:-2;}
+    .bg::after{
+      content:""; position:absolute; inset:0;
+      background-image:url('bg1.jpg');
+      background-size:cover; background-position:center; background-repeat:no-repeat;
+      opacity:.24; filter:saturate(1.05) contrast(1.05);
+    }
+
+    /* Compact container */
+    .wrap{width:min(620px, 100%);}
+
+    .header{
+      display:flex; align-items:center; justify-content:center; gap:10px;
+      margin:4px 0 10px;
+    }
+    .logo{
+      height:44px; object-fit:contain;
+      background:rgba(0,0,0,.18);
+      border:1px solid rgba(255,255,255,.22);
+      border-radius:10px; padding:4px 8px;
+      backdrop-filter:blur(6px);
+    }
+    .title{
+      margin:0; font-weight:900; letter-spacing:.2px;
+      font-size:clamp(18px,3.2vw,24px);
+      text-shadow:0 2px 12px rgba(0,0,0,.45);
+    }
+
+    .card{
+      background:var(--glass);
+      border:1px solid var(--glass-brd);
+      border-radius:16px;
+      backdrop-filter:blur(12px) saturate(1.1);
+      -webkit-backdrop-filter:blur(12px) saturate(1.1);
+      padding:14px;
+      box-shadow:0 8px 22px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.08);
+    }
+
+    /* Always 2×2 in compact */
+    .grid{
+      display:grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap:10px;
+    }
+
+    .unit{
+      text-align:center;
+      background:linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,.04));
+      border:1px solid rgba(255,255,255,.26);
+      border-radius:12px; padding:12px;
+    }
+    .num{
+      font-variant-numeric:tabular-nums;
+      font-weight:900;
+      font-size:clamp(26px,7vw,40px);
+      line-height:1; display:block;
+      text-shadow:0 2px 14px rgba(0,0,0,.5);
+    }
+    .label{
+      margin-top:4px; letter-spacing:.16em; text-transform:uppercase;
+      font-size:11px; color:var(--muted);
+    }
+
+    /* Optional small footer line (kept subtle) */
+    .foot{margin-top:10px; text-align:center; font-size:12px; color:var(--muted);}
+  </style>
+</head>
+<body>
+  <div class="bg"></div>
+
+  <div class="wrap" id="timer"
+       data-title="Smile Movement"
+       data-deadline="2025-09-30 23:59:59"
+       data-logo="logo1.png">
+  </div>
+
+  <script>
+  (function(){
+    const root = document.getElementById('timer');
+    const data = {
+      title: root.getAttribute('data-title') || 'Smile Movement',
+      deadline: root.getAttribute('data-deadline') || '2025-09-30 23:59:59',
+      logo: root.getAttribute('data-logo') || ''
+    };
+
+    // Header
+    const header = document.createElement('div'); header.className='header';
+    if (data.logo){
+      const img=document.createElement('img'); img.className='logo'; img.src=encodeURI(data.logo); img.alt='Smile Movement';
+      header.appendChild(img);
+    }
+    const title=document.createElement('h1'); title.className='title'; title.textContent=data.title;
+    header.appendChild(title);
+
+    // Card + grid
+    const card=document.createElement('div'); card.className='card';
+    const grid=document.createElement('div'); grid.className='grid'; card.appendChild(grid);
+    const units=['Days','Hours','Minutes','Seconds'];
+    const nums=units.map(u=>{
+      const unit=document.createElement('div'); unit.className='unit';
+      const num=document.createElement('span'); num.className='num'; num.textContent='00';
+      const lab=document.createElement('div'); lab.className='label'; lab.textContent=u;
+      unit.appendChild(num); unit.appendChild(lab); grid.appendChild(unit);
+      return num;
+    });
+
+    const foot=document.createElement('div'); foot.className='foot';
+    foot.textContent='Counting down to the Smile Movement finish!';
+    card.appendChild(foot);
+
+    // Mount
+    root.innerHTML=''; root.appendChild(header); root.appendChild(card);
+
+    // Parse local YYYY-MM-DD[ HH:MM[:SS]]
+    function parseLocal(str){
+      if(!str) return null;
+      const m=String(str).trim().match(/^(\d{4})-(\d{1,2})-(\d{1,2})(?:[ T](\d{1,2})(?::(\d{2})(?::(\d{2}))?)?)?$/);
+      if(!m) return null;
+      const [, y, mo, d, hh='0', mm='0', ss='0']=m;
+      return new Date(+y, +mo-1, +d, +hh, +mm, +ss, 0);
+    }
+    const deadline=parseLocal(data.deadline);
+    if(!deadline || isNaN(deadline)){ foot.textContent='⚠️ Invalid deadline. Use YYYY-MM-DD HH:MM:SS'; return; }
+
+    const pad=n=>String(n).padStart(2,'0');
+    function render(diff){
+      const d=Math.max(0, Math.floor(diff/86400000));
+      const h=Math.max(0, Math.floor((diff%86400000)/3600000));
+      const m=Math.max(0, Math.floor((diff%3600000)/60000));
+      const s=Math.max(0, Math.floor((diff%60000)/1000));
+      [String(d), pad(h), pad(m), pad(s)].forEach((v,i)=>{ nums[i].textContent=v; });
+    }
+    function tick(){
+      const diff=deadline.getTime()-Date.now();
+      if(diff<=0){ render(0); foot.textContent='🎉 The Smile Movement has finished!'; return; }
+      render(diff); requestAnimationFrame(tick);
+    }
+    tick();
+  })();
+  </script>
+</body>
+</html>
