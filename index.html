@@ -4,16 +4,22 @@
   <meta charset="UTF-8" />
   <title>Smile Movement — Countdown</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="description" content="Smile Movement Countdown — Straumann Group employees unite to walk, run, and cycle for donations to the Straumann Group Foundation." />
+  <meta name="description" content="Smile Movement Countdown — Straumann Group employees unite to walk, run, and cycle. Every km is matched with donations to the Straumann Group Foundation." />
   <style>
+    /* ---- Brand palette ---- */
     :root{
-      --accent:#00A389;            /* Straumann green */
-      --text:#ffffff;
-      --muted:rgba(255,255,255,.85);
-      --glass:rgba(255,255,255,.12);
-      --glass-brd:rgba(255,255,255,.35);
-      --bg-fallback:#0c1222;
+      --brand-blue: #195AFA;     /* Blue */
+      --brand-gray: #36393A;     /* Straumann Gray */
+      --brand-sand: #B98C3C;     /* Sand */
+
+      --accent: var(--brand-blue);
+      --text: #ffffff;
+      --muted: rgba(255,255,255,.9);
+      --glass: rgba(54,57,58,.50);        /* gray with transparency */
+      --glass-brd: rgba(255,255,255,.35);
+      --bg-fallback: #0c1222;
     }
+
     *{box-sizing:border-box}
     html,body{height:100%}
     body{
@@ -29,14 +35,16 @@
     .bg{position:fixed; inset:0; z-index:-2;}
     .bg::after{
       content:""; position:absolute; inset:0;
-      background-size:cover; background-position:center; background-repeat:no-repeat;
+      background-image: url('bg1.jpg');  /* <-- your background */
+      background-size: cover; background-position: center; background-repeat: no-repeat;
       opacity:.28; filter:saturate(1.05) contrast(1.05);
     }
 
     .wrap{width:min(1100px,92vw)}
+
     .header{
       display:flex; align-items:center; justify-content:center; gap:14px;
-      margin: 6px 0 16px;
+      margin: 8px 0 16px;
     }
     .logo{
       height:56px; object-fit:contain; display:block;
@@ -47,8 +55,9 @@
     }
     .title{
       margin:0; text-align:center;
-      font-weight:800; letter-spacing:.2px;
-      font-size:clamp(20px,3.5vw,30px);
+      font-weight:900; letter-spacing:.2px;
+      font-size:clamp(22px,3.6vw,34px);
+      text-shadow: 0 2px 14px rgba(0,0,0,.45);
     }
     .subtitle{
       text-align:center; margin:6px 0 0; color:var(--muted);
@@ -74,12 +83,15 @@
 
     .unit{
       text-align:center;
-      background:linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,.04));
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,.04));
       border:1px solid rgba(255,255,255,.28);
       border-radius:16px; padding:clamp(12px,2vw,16px);
+      box-shadow: inset 0 0 0 2px rgba(25,90,250,.08);
     }
+    .unit:nth-child(1){ box-shadow: inset 0 0 0 2px rgba(25,90,250,.12); } /* subtle blue ring */
     .num{
-      font-variant-numeric: tabular-nums; font-weight:800;
+      font-variant-numeric: tabular-nums; font-weight:900;
       font-size:clamp(34px,6.5vw,58px); line-height:1; display:block;
       text-shadow:0 2px 18px rgba(0,0,0,.55);
     }
@@ -93,91 +105,32 @@
       font-size:13px; color:var(--muted);
       text-align:center;
     }
-    .tag{
-      display:inline-block; margin-bottom:10px;
-      padding:6px 10px; border-radius:999px;
-      background:var(--accent); color:#051018; font-weight:700; font-size:12px;
-      box-shadow:0 8px 20px rgba(0,0,0,.25);
-    }
-    a { color: #bfe; }
+
+    .emph{ color: var(--brand-sand); font-weight: 800; }  /* for subtle brand highlight */
   </style>
 </head>
 <body>
   <!-- Background holder -->
-  <div class="bg" id="bg"></div>
+  <div class="bg"></div>
 
   <div class="wrap" id="timer"
        data-title="Smile Movement"
        data-subtitle="Walk • Run • Cycle — Every km becomes a donation to the Straumann Group Foundation"
-       data-deadline-local="2025-09-30 23:59:59"     <!-- Europe/Berlin local time -->
-       data-timezone="Europe/Berlin"
-       data-bg="TSM Teams Background.jpg"
-       data-logo="TSM eMail Signature.png"
-       data-accent="#00A389">
-    <!-- Content is constructed by the script -->
+       data-deadline="2025-09-30 23:59:59"   <!-- local time; ends just before Oct 1 -->
+       data-logo="logo1.png">                <!-- your logo -->
   </div>
 
   <script>
   (function(){
     const root = document.getElementById('timer');
-    const bgDiv = document.getElementById('bg');
 
     // Read config
     const data = {
       title: root.getAttribute('data-title') || 'Smile Movement',
       subtitle: root.getAttribute('data-subtitle') || '',
-      // Treat this as a wall-clock time in the specified timezone:
-      deadlineLocal: root.getAttribute('data-deadline-local') || '2025-09-30 23:59:59',
-      timeZone: root.getAttribute('data-timezone') || 'Europe/Berlin',
-      bg: root.getAttribute('data-bg') || '',
-      logo: root.getAttribute('data-logo') || '',
-      accent: root.getAttribute('data-accent') || '#00A389'
+      deadline: root.getAttribute('data-deadline') || '2025-09-30 23:59:59',
+      logo: root.getAttribute('data-logo') || ''
     };
-    document.documentElement.style.setProperty('--accent', data.accent);
-
-    // Apply background image
-    (function applyBg(){
-      const url = data.bg ? encodeURI(data.bg) : '';
-      const style = document.createElement('style');
-      style.textContent = `.bg::after{background-image:url('${url}');}`;
-      document.head.appendChild(style);
-    })();
-
-    // Convert a wall time in a given IANA timezone to a real UTC timestamp
-    // (works in modern browsers with Intl.DateTimeFormat)
-    function zonedWallTimeToDate(localStr, timeZone){
-      // Parse "YYYY-MM-DD HH:MM:SS"
-      const m = String(localStr).trim().match(/^(\d{4})-(\d{2})-(\d{2})(?:[ T](\d{2}):(\d{2}):(\d{2}))$/);
-      if(!m) return null;
-      const [_, y, mo, d, hh, mm, ss] = m.map(Number);
-      // initial UTC candidate for that wall time:
-      const utcGuess = new Date(Date.UTC(y, mo-1, d, hh, mm, ss));
-
-      // get how that UTC moment looks IN the target time zone
-      const fmt = new Intl.DateTimeFormat('en-US', {
-        timeZone, hour12:false,
-        year:'numeric', month:'2-digit', day:'2-digit',
-        hour:'2-digit', minute:'2-digit', second:'2-digit'
-      });
-
-      function partsToUTC(parts){
-        const m = {};
-        for(const p of parts){ if(p.type !== 'literal') m[p.type] = p.value; }
-        // parts deliver month/day as 2-digit strings; build UTC time from them
-        return Date.UTC(
-          Number(m.year), Number(m.month)-1, Number(m.day),
-          Number(m.hour), Number(m.minute), Number(m.second)
-        );
-      }
-
-      // The trick: compare the formatted parts at the utcGuess to the utcGuess itself to derive offset.
-      const asTzUTC = partsToUTC(fmt.formatToParts(utcGuess));
-      const offsetMs = asTzUTC - utcGuess.getTime();
-      // Apply offset so that wall-clock time in TZ maps to a correct UTC instant:
-      return new Date(Date.UTC(y, mo-1, d, hh, mm, ss) - offsetMs);
-    }
-
-    const deadline = zonedWallTimeToDate(data.deadlineLocal, data.timeZone);
 
     // Build header
     const header = document.createElement('div'); header.className = 'header';
@@ -195,11 +148,6 @@
 
     // Card + grid
     const card = document.createElement('div'); card.className = 'card';
-
-    const tag = document.createElement('div'); tag.className = 'tag';
-    tag.textContent = 'Ends 30 Sep 2025 — Europe/Berlin';
-    card.appendChild(tag);
-
     const grid = document.createElement('div'); grid.className = 'grid'; card.appendChild(grid);
     const units = ['Days','Hours','Minutes','Seconds'];
     const nums = units.map(u=>{
@@ -211,17 +159,25 @@
     });
 
     const info = document.createElement('div'); info.className='info';
-    info.innerHTML = 'The Smile Movement unites Straumann Group employees through walking, running, and cycling challenges. Every kilometer is tracked and matched with donations to the Straumann Group Foundation—helping bring healthier smiles and better lives worldwide.';
+    info.innerHTML = 'The <span class="emph">Smile Movement</span> unites Straumann Group employees through walking, running, and cycling challenges. Every kilometer is tracked and matched with donations to the Straumann Group Foundation—helping bring healthier smiles and better lives worldwide.';
     card.appendChild(info);
 
     // Mount
     root.innerHTML = '';
-    const container = document.createElement('div'); container.className = 'wrap';
-    // We already are inside .wrap (root), so just append:
     root.appendChild(header);
     root.appendChild(card);
 
-    // Safety check
+    // Parse local "YYYY-MM-DD" or "YYYY-MM-DD HH:MM:SS"
+    function parseLocal(str){
+      if (!str) return null;
+      const m = String(str).trim()
+        .match(/^(\d{4})-(\d{1,2})-(\d{1,2})(?:[ T](\d{1,2})(?::(\d{2})(?::(\d{2}))?)?)?$/);
+      if (!m) return null;
+      const [, y, mo, d, hh="0", mm="0", ss="0"] = m;
+      return new Date(+y, +mo-1, +d, +hh, +mm, +ss, 0);
+    }
+    const deadline = parseLocal(data.deadline);
+
     if (!deadline || isNaN(deadline)) {
       const warn = document.createElement('div'); warn.className='info';
       warn.textContent = '⚠️ Invalid deadline. Please keep format YYYY-MM-DD HH:MM:SS.';
@@ -240,8 +196,7 @@
     }
 
     function tick(){
-      const now = Date.now();
-      const diff = deadline.getTime() - now;
+      const diff = deadline.getTime() - Date.now();
       if (diff <= 0) {
         render(0);
         info.textContent = '🎉 The Smile Movement countdown has finished. Thank you for every step and every kilometer!';
